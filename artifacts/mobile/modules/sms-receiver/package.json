@@ -1,0 +1,10 @@
+{
+  "name": "sms-receiver",
+  "version": "1.0.0",
+  "description": "Native Android BroadcastReceiver for real-time bank SMS detection",
+  "main": "index.ts",
+  "peerDependencies": {
+    "expo": "*",
+    "expo-modules-core": "*"
+  }
+}

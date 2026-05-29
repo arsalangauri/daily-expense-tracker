@@ -1,0 +1,2 @@
+- [Expo SMS native packages](expo-sms-packages.md) — react-native-get-sms-android causes Metro ENOENT crash in Expo Go; use stub + custom APK approach instead.
+- [Expo duplicate React](expo-duplicate-react.md) — @workspace/api-client-react in Expo package.json causes duplicate React → invalid hook call errors; never add it to mobile deps.

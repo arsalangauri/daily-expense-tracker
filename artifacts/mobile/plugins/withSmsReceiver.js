@@ -1,4 +1,12 @@
-const { withMainApplication, withDangerousMod } = require("@expo/config-plugins");
+// @ts-check
+let configPlugins;
+try {
+  configPlugins = require("@expo/config-plugins");
+} catch (e) {
+  configPlugins = require("expo/config-plugins");
+}
+
+const { withMainApplication, withDangerousMod } = configPlugins;
 const fs = require("fs");
 const path = require("path");
 
@@ -125,48 +133,59 @@ class SmsReceiverPackage : ReactPackage {
 }
 `;
 
+/** @param {import('@expo/config-plugins').ExpoConfig} config */
 function withSmsReceiverFiles(config) {
   return withDangerousMod(config, [
     "android",
     (config) => {
-      const dir = path.join(
-        config.modRequest.platformProjectRoot,
-        KOTLIN_DIR
-      );
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(
-        path.join(dir, "SmsReceiverModule.kt"),
-        SMS_RECEIVER_MODULE_KT
-      );
-      fs.writeFileSync(
-        path.join(dir, "SmsReceiverPackage.kt"),
-        SMS_RECEIVER_PACKAGE_KT
-      );
+      try {
+        const dir = path.join(
+          config.modRequest.platformProjectRoot,
+          KOTLIN_DIR
+        );
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(
+          path.join(dir, "SmsReceiverModule.kt"),
+          SMS_RECEIVER_MODULE_KT
+        );
+        fs.writeFileSync(
+          path.join(dir, "SmsReceiverPackage.kt"),
+          SMS_RECEIVER_PACKAGE_KT
+        );
+      } catch (e) {
+        console.warn("[withSmsReceiver] Failed to write Kotlin files:", e.message);
+      }
       return config;
     },
   ]);
 }
 
+/** @param {import('@expo/config-plugins').ExpoConfig} config */
 function withSmsReceiverRegistration(config) {
   return withMainApplication(config, (config) => {
-    const content = config.modResults.contents;
-    if (content.includes("SmsReceiverPackage")) return config;
+    try {
+      const content = config.modResults.contents;
+      if (content.includes("SmsReceiverPackage")) return config;
 
-    let updated = content.replace(
-      "import expo.modules.ReactNativeHostWrapper",
-      "import expo.modules.ReactNativeHostWrapper\nimport expo.modules.smsreceiver.SmsReceiverPackage"
-    );
+      let updated = content.replace(
+        "import expo.modules.ReactNativeHostWrapper",
+        "import expo.modules.ReactNativeHostWrapper\nimport expo.modules.smsreceiver.SmsReceiverPackage"
+      );
 
-    updated = updated.replace(
-      /val packages = PackageList\(this\)\.packages/,
-      "val packages = PackageList(this).packages\n          packages.add(SmsReceiverPackage())"
-    );
+      updated = updated.replace(
+        /val packages = PackageList\(this\)\.packages/,
+        "val packages = PackageList(this).packages\n          packages.add(SmsReceiverPackage())"
+      );
 
-    config.modResults.contents = updated;
+      config.modResults.contents = updated;
+    } catch (e) {
+      console.warn("[withSmsReceiver] Failed to patch MainApplication:", e.message);
+    }
     return config;
   });
 }
 
+/** @param {import('@expo/config-plugins').ExpoConfig} config */
 module.exports = function withSmsReceiver(config) {
   config = withSmsReceiverFiles(config);
   config = withSmsReceiverRegistration(config);

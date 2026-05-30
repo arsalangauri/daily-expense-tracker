@@ -1,12 +1,14 @@
-import { Platform } from "react-native";
 import {
-  startListening,
-  stopListening,
-  readRecentSms,
-  addSmsListener,
-  type SmsEvent,
-  type RawSmsRecord,
-} from "sms-receiver";
+  Platform,
+  NativeModules,
+  NativeEventEmitter,
+  type EmitterSubscription,
+} from "react-native";
+
+const { SmsReceiver } = NativeModules;
+const smsEmitter: NativeEventEmitter | null = SmsReceiver
+  ? new NativeEventEmitter(SmsReceiver)
+  : null;
 
 export interface RawSms {
   id: string;
@@ -16,22 +18,27 @@ export interface RawSms {
 }
 
 export async function readStoredSms(maxCount = 200): Promise<RawSms[]> {
-  if (Platform.OS !== "android") return [];
-  return readRecentSms(maxCount);
+  if (Platform.OS !== "android" || !SmsReceiver) return [];
+  try {
+    return await SmsReceiver.readRecentSms(maxCount);
+  } catch {
+    return [];
+  }
 }
 
 export function subscribeToNewSms(
   callback: (sms: { address: string; body: string; date: number }) => void
 ): (() => void) | null {
-  if (Platform.OS !== "android") return null;
-  startListening();
-  const sub = addSmsListener((event: SmsEvent) => {
-    callback({ address: event.address, body: event.body, date: event.date });
-  });
+  if (Platform.OS !== "android" || !SmsReceiver || !smsEmitter) return null;
+
+  SmsReceiver.startListening();
+  const sub: EmitterSubscription = smsEmitter.addListener(
+    "SmsReceived",
+    callback
+  );
+
   return () => {
     sub.remove();
-    stopListening();
+    SmsReceiver.stopListening?.();
   };
 }
-
-export { type RawSmsRecord };

@@ -17,6 +17,9 @@ config.resolver = {
     // Ignore other artifacts' node_modules to avoid conflicts
     /artifacts\/api-server\/node_modules/,
     /artifacts\/mockup-sandbox\/node_modules/,
+    // Ignore transient skill/agent inbox files
+    /\.local\/skills\/\.old-agent-inbox/,
+    /\.local\/.*\.old-agent-inbox/,
   ],
 };
 
